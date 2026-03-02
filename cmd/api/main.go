@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"first-app-go/internal/data"
+	"log"
 	"net/http"
 )
 
@@ -13,9 +15,18 @@ type healthResponse struct {
 }
 
 func main() {
+	// 1. Open a database connection.
+	db, err := data.OpenSQLite()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 2. Close it cleanly when the app shuts down.
+	defer db.Close()
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", healthcheck)
+	mux.HandleFunc("GET /books", listBooksHandler)
 
 	println("Ready on localhost:8080")
 	http.ListenAndServe(":8080", mux)
@@ -28,6 +39,17 @@ func healthcheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := writeJSON(w, http.StatusOK, response); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func listBooksHandler(w http.ResponseWriter, r *http.Request) {
+	books := []data.Book{
+		{ID: 1, Title: "The Go Programming Language", Author: "Alan Donovan", Year: 2015},
+		{ID: 2, Title: "Designing Data-Intensive Applications", Author: "Martin Kleppmann", Year: 2017},
+	}
+
+	if err := writeJSON(w, http.StatusOK, books); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
