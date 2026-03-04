@@ -37,34 +37,9 @@ func main() {
 
 	app := &App{DB: db}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /healthz", healthcheck)
-	mux.HandleFunc("GET /books", app.listBooksHandler)
-
-	println("Ready on localhost:8080")
-	http.ListenAndServe(":8080", mux)
-}
-
-func healthcheck(w http.ResponseWriter, r *http.Request) {
-	response := healthResponse{
-		Status:  "OK",
-		Version: version,
-	}
-
-	if err := writeJSON(w, http.StatusOK, response); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	}
-}
-
-func (app *App) listBooksHandler(w http.ResponseWriter, r *http.Request) {
-	books := []data.Book{
-		{ID: 1, Title: "The Go Programming Language", Author: "Alan Donovan", Year: 2015},
-		{ID: 2, Title: "Designing Data-Intensive Applications", Author: "Martin Kleppmann", Year: 2017},
-	}
-
-	if err := writeJSON(w, http.StatusOK, books); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	log.Println("starting server on :8080")
+	if err := http.ListenAndServe(":8080", app.routes()); err != nil {
+		log.Fatal(err)
 	}
 }
 
