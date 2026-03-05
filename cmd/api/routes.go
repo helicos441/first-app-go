@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+type bookResponse struct {
+	Books []data.Book `json:"books"`
+}
+
 func (app *App) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", app.healthcheckHandler)
@@ -30,7 +34,9 @@ func (app *App) listBooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := writeJSON(w, http.StatusOK, books); err != nil {
+	resp := bookResponse{Books: books}
+
+	if err := writeJSON(w, http.StatusOK, resp); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
