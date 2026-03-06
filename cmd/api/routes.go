@@ -28,7 +28,7 @@ func (app *App) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) listBooksHandler(w http.ResponseWriter, r *http.Request) {
-	books, err := data.GetAll(app.DB)
+	books, err := app.Stores.Books.GetAll()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

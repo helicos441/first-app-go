@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"first-app-go/internal/data"
 	"log"
@@ -11,7 +10,7 @@ import (
 const version = "1.0.0"
 
 type App struct {
-	DB *sql.DB
+	Stores data.Stores
 }
 
 type healthResponse struct {
@@ -35,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := &App{DB: db}
+	app := &App{Stores: data.NewStores(db)}
 
 	log.Println("starting server on :8080")
 	if err := http.ListenAndServe(":8080", app.routes()); err != nil {

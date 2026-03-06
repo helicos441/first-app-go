@@ -32,7 +32,7 @@ func setupTestApp(t *testing.T) *App {
 		t.Fatal(err)
 	}
 
-	return &App{DB: db}
+	return &App{Stores: data.NewStores(db)}
 }
 
 func TestListBooksHandler(t *testing.T) {

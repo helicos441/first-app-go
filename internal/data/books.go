@@ -10,13 +10,13 @@ type BookStore struct {
 	DB *sql.DB
 }
 
-func GetAll(db *sql.DB) ([]Book, error) {
+func (s *BookStore) GetAll() ([]Book, error) {
 	const query = `SELECT id, title, author, year FROM books ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := s.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
