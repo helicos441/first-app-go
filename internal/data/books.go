@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+type BookStore struct {
+	DB *sql.DB
+}
+
 func GetAll(db *sql.DB) ([]Book, error) {
 	const query = `SELECT id, title, author, year FROM books ORDER BY id`
 

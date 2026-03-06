@@ -2,7 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"first-app-go/internal/data"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -30,4 +33,29 @@ func setupTestApp(t *testing.T) *App {
 	}
 
 	return &App{DB: db}
+}
+
+func TestListBooksHandler(t *testing.T) {
+	app := setupTestApp(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/books", nil)
+
+	rr := httptest.NewRecorder()
+
+	app.listBooksHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("want status code %d; got %d", http.StatusOK, rr.Code)
+	}
+
+	var resp bookResponse
+
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+
+	booksCount := len(resp.Books)
+	if booksCount != 2 {
+		t.Errorf("want books count of 2; got %d", booksCount)
+	}
 }
