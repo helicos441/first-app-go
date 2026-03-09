@@ -59,3 +59,34 @@ func TestListBooksHandler(t *testing.T) {
 		t.Errorf("want books count of 2; got %d", booksCount)
 	}
 }
+
+func TestShowBookHandler(t *testing.T) {
+	app := setupTestApp(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/books/1", http.NoBody)
+
+	rr := httptest.NewRecorder()
+
+	app.routes().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK { // 200
+		t.Errorf("want status code %d; got %d", http.StatusOK, rr.Code)
+	}
+
+	var book data.Book
+
+	if err := json.NewDecoder(rr.Body).Decode(&book); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := data.Book{
+		ID:     1,
+		Title:  "The Go Programming Language",
+		Author: "Alan Donovan",
+		Year:   2015,
+	}
+
+	if book != expected {
+		t.Errorf("want %#v; got %#v", expected, book)
+	}
+}

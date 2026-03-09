@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"first-app-go/internal/data"
 	"net/http"
 	"strconv"
@@ -44,27 +46,24 @@ func (app *App) listBooksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) showBookHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the value of id
 	idString := r.PathValue("id")
-	// Convert to an int for the db lookup
 	id, err := strconv.ParseInt(idString, 10, 64)
-	// Validate the id
 	if err != nil || id < 1 {
-		// Return not found if can't be validated
 		http.NotFound(w, r)
 		return
 	}
 
-	// For now, we return a hard-coded book.
-	// Later we’ll replace this with a real database lookup.
-	book := data.Book{
-		ID:     id,
-		Title:  "Stub",
-		Author: "N/A",
-		Year:   0,
+	book, err := app.Stores.Books.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			http.NotFound(w, r) // 404
+		default:
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
 	}
 
-	// Write the json response
 	if err := writeJSON(w, http.StatusOK, book); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}

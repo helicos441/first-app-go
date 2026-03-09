@@ -38,3 +38,28 @@ func (s *BookStore) GetAll() ([]Book, error) {
 
 	return books, nil
 }
+
+func (s *BookStore) Get(id int64) (*Book, error) {
+	if id < 1 {
+		return nil, sql.ErrNoRows
+	}
+
+	const query = `SELECT id, title, author, year FROM books WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var book Book
+
+	err := s.DB.QueryRowContext(ctx, query, id).Scan(
+		&book.ID,
+		&book.Title,
+		&book.Author,
+		&book.Year,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &book, nil
+}
