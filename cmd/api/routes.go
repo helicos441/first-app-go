@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"first-app-go/internal/data"
+	"first-app-go/internal/request"
 	"net/http"
 	"strconv"
 )
@@ -17,6 +19,7 @@ func (app *App) routes() http.Handler {
 	mux.HandleFunc("GET /healthz", app.healthcheckHandler)
 	mux.HandleFunc("GET /books", app.listBooksHandler)
 	mux.HandleFunc("GET /books/{id}", app.showBookHandler)
+	mux.HandleFunc("POST /books", app.createBookHandler)
 	return mux
 }
 
@@ -65,6 +68,28 @@ func (app *App) showBookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := writeJSON(w, http.StatusOK, book); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func (app *App) createBookHandler(w http.ResponseWriter, r *http.Request) {
+	var input request.FullBookRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	// Step 3: Validate the input data.
+
+	book := &data.Book{
+		ID:     3, // fake ID
+		Title:  "The Go Workshop",
+		Author: "Delio D'Anna",
+		Year:   2021,
+	}
+
+	if err := writeJSON(w, http.StatusCreated, book); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
