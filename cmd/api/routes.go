@@ -80,7 +80,11 @@ func (app *App) createBookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Step 3: Validate the input data.
+	validationErrors := request.ValidateFullBookRequest(&br)
+	if len(validationErrors) > 0 {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"errors": validationErrors})
+		return
+	}
 
 	book := &data.Book{
 		ID:     3, // fake ID
