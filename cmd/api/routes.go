@@ -73,9 +73,9 @@ func (app *App) showBookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) createBookHandler(w http.ResponseWriter, r *http.Request) {
-	var input request.FullBookRequest
+	var br request.FullBookRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -87,10 +87,15 @@ func (app *App) createBookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	book := &data.Book{
-		ID:     3, // fake ID
-		Title:  "The Go Workshop",
-		Author: "Delio D'Anna",
-		Year:   2021,
+		Title:  br.Title,
+		Author: br.Author,
+		Year:   br.Year,
+	}
+
+	book, err := app.Stores.Books.Insert(book)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	if err := writeJSON(w, http.StatusCreated, book); err != nil {

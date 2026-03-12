@@ -63,3 +63,24 @@ func (s *BookStore) Get(id int64) (*Book, error) {
 
 	return &book, nil
 }
+
+func (s *BookStore) Insert(book *Book) (*Book, error) {
+	query := `INSERT INTO books (title, author, year) VALUES (?, ?, ?)`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	res, err := s.DB.ExecContext(ctx, query, book.Title, book.Author, book.Year)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	book.ID = id
+
+	return book, nil
+}
