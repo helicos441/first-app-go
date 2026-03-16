@@ -6,6 +6,7 @@ import (
 	"first-app-go/internal/data"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -88,5 +89,134 @@ func TestShowBookHandler(t *testing.T) {
 
 	if book != expected {
 		t.Errorf("want %#v; got %#v", expected, book)
+	}
+}
+
+func TestCreateBookHandler_ValidInput(t *testing.T) {
+	app := setupTestApp(t)
+
+	body := strings.NewReader(`{
+		"title":"Testing Go",
+		"author":"Gary Clarke",
+		"year":2030
+	}`)
+
+	req := httptest.NewRequest(http.MethodPost, "/books", body)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	app.routes().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Errorf("want status code %d; got %d", http.StatusCreated, rr.Code)
+	}
+
+	var book data.Book
+
+	if err := json.NewDecoder(rr.Body).Decode(&book); err != nil {
+		t.Fatal(err)
+	}
+
+	if book.ID < 1 {
+		t.Errorf("expected book to have a positive value ID")
+	}
+	if book.Title != "Testing Go" {
+		t.Errorf("expected title to be 'Testing Go'; got %q", book.Title)
+	}
+	if book.Author != "Gary Clarke" {
+		t.Errorf("expected author to be 'Gary Clarke'; got %q", book.Author)
+	}
+	if book.Year != 2030 {
+		t.Errorf("expected year to be 2030; got %d", book.Year)
+	}
+
+	stored, err := app.Stores.Books.Get(book.ID)
+	if err != nil {
+		t.Fatalf("failed to fetch book from DB: %v", err)
+	}
+
+	if *stored != book {
+		t.Errorf("book in DB does not match response. got: %#v", stored)
+	}
+}
+
+func TestCreateBookHandler_InvalidInput(t *testing.T) {
+	tests := []struct {
+		name     string
+		payload  string
+		wantCode int
+		wantKeys []string // expected keys in the "errors" object of the response
+	}{
+		{
+			name:     "missing all fields",
+			payload:  `{}`,
+			wantCode: http.StatusUnprocessableEntity,
+			wantKeys: []string{"title", "author", "year"},
+		},
+		{
+			name:     "missing title",
+			payload:  `{"author": "Gary", "year": 2023}`,
+			wantCode: http.StatusUnprocessableEntity,
+			wantKeys: []string{"title"},
+		},
+		{
+			name:     "missing author",
+			payload:  `{"title": "Testing Go", "year": 2023}`,
+			wantCode: http.StatusUnprocessableEntity,
+			wantKeys: []string{"author"},
+		},
+		{
+			name:     "invalid year (zero)",
+			payload:  `{"title": "Testing Go", "author": "Gary", "year": 0}`,
+			wantCode: http.StatusUnprocessableEntity,
+			wantKeys: []string{"year"},
+		},
+		{
+			name:     "invalid JSON format",
+			payload:  `{`,
+			wantCode: http.StatusBadRequest,
+			wantKeys: nil, // No "errors" object expected — it's a decoding error
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			app := setupTestApp(t)
+
+			body := strings.NewReader(tc.payload)
+
+			req := httptest.NewRequest(http.MethodPost, "/books", body)
+
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+
+			app.routes().ServeHTTP(rr, req)
+
+			if rr.Code != tc.wantCode {
+				t.Errorf("want status code %d; got %d", tc.wantCode, rr.Code)
+			}
+
+			if tc.wantKeys != nil {
+				var resp map[string]any
+				err := json.NewDecoder(rr.Body).Decode(&resp)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				errorsMap, ok := resp["errors"].(map[string]any)
+				if !ok {
+					t.Fatalf("expected 'errors' field in response, got: %#v", resp)
+				}
+
+				for _, key := range tc.wantKeys {
+					if _, ok := errorsMap[key]; !ok {
+						t.Errorf("expected error for key %q in response", key)
+					}
+				}
+			}
+		})
 	}
 }
