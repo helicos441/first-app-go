@@ -6,6 +6,7 @@ import (
 	"errors"
 	"first-app-go/internal/data"
 	"first-app-go/internal/request"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -21,6 +22,7 @@ func (app *App) routes() http.Handler {
 	mux.HandleFunc("GET /books/{id}", app.showBookHandler)
 	mux.HandleFunc("POST /books", app.createBookHandler)
 	mux.HandleFunc("PUT /books/{id}", app.putBookHandler)
+	mux.HandleFunc("PATCH /books/{id}", app.patchBookHandler)
 	return mux
 }
 
@@ -140,10 +142,37 @@ func (app *App) putBookHandler(w http.ResponseWriter, r *http.Request) {
 	book.Year = br.Year
 
 	// Step 6: Save the updated book to the DB
-	updatedBook := book
+	updatedBook, err := app.Stores.Books.Update(book)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			http.NotFound(w, r)
+		default:
+			log.Printf("failed to update book: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
 
 	// Step 7: Return the updated book as JSON with a 200 OK status.
 	if err := writeJSON(w, http.StatusOK, updatedBook); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
+}
+
+func (app *App) patchBookHandler(w http.ResponseWriter, r *http.Request) {
+	// Step 1: Parse the book ID from the route
+
+	// Step 2: Decode the request body into a PartialBookRequest
+
+	// Step 3: Validate the input
+
+	// Step 4: Retrieve the existing book
+
+	// Step 5: Replace the provided fields on the book
+
+	// Step 6: Save the updated book to the DB
+	// Stub this for the time being
+
+	// Step 7: Return the updated book as JSON with a 200 OK status.
 }

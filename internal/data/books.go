@@ -84,3 +84,15 @@ func (s *BookStore) Insert(book *Book) (*Book, error) {
 
 	return book, nil
 }
+
+func (s *BookStore) Update(book *Book) (*Book, error) {
+	query := `UPDATE books SET title = ?, author = ?, year = ? WHERE id = ?`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := s.DB.ExecContext(ctx, query, book.Title, book.Author, book.Year, book.ID)
+	if err != nil {
+		return nil, err
+	}
+	return book, nil
+}
