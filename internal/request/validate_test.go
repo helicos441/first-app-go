@@ -72,3 +72,66 @@ func TestValidateFullBookRequest_InvalidInput(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatePartialBookRequest_ValidInput(t *testing.T) {
+	// Create PartialBookRequest br
+	title := "Partial Book"
+	br := PartialBookRequest{
+		Title:  &title,
+		Author: nil,
+		Year:   nil,
+	}
+
+	errors := ValidatePartialBookRequest(&br)
+
+	// Check errors is empty (len == 0)
+	if len(errors) != 0 {
+		t.Errorf("expected no validation errors, got %d: %v", len(errors), errors)
+	}
+}
+
+func TestValidatePartialBookRequest_InvalidInput(t *testing.T) {
+	title := "Partial Book"
+	emptyTitle := ""
+	emptyAuthor := ""
+	zeroYear := 0
+	// Table-driven tests: we define a list (slice) of test cases to loop over.
+	tests := []struct {
+		name     string             // A short label for the test case (helps identify failures)
+		br       PartialBookRequest // The input data to validate
+		wantKeys []string           // The expected error keys we should get back
+	}{
+		{
+			name:     "empty title, author, and year",
+			br:       PartialBookRequest{Title: &emptyTitle, Author: &emptyAuthor, Year: &zeroYear},
+			wantKeys: []string{"title", "author", "year"},
+		},
+		{
+			name:     "empty author",
+			br:       PartialBookRequest{Title: &title, Author: &emptyAuthor, Year: nil},
+			wantKeys: []string{"author"},
+		},
+		{
+			name:     "invalid year",
+			br:       PartialBookRequest{Title: &title, Author: nil, Year: &zeroYear},
+			wantKeys: []string{"year"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errors := ValidatePartialBookRequest(&tc.br)
+
+			if len(errors) != len(tc.wantKeys) {
+				t.Errorf("%s: expected %d validation errors, got %d", tc.name, len(tc.wantKeys), len(errors))
+			}
+
+			// Check if all expected keys exist in the error map
+			for _, key := range tc.wantKeys {
+				if _, ok := errors[key]; !ok {
+					t.Errorf("%s: expected validation error for key %s", tc.name, key)
+				}
+			}
+		})
+	}
+}

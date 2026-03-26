@@ -161,9 +161,17 @@ func (app *App) putBookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) patchBookHandler(w http.ResponseWriter, r *http.Request) {
-	// Step 1: Parse the book ID from the route
+	idPath := r.PathValue("id")
+	id, err := strconv.ParseInt(idPath, 10, 64)
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
 
-	// Step 2: Decode the request body into a PartialBookRequest
+	var br request.PartialBookRequest
+	if err := json.NewDecoder(r.Body).Decode(&br); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	}
 
 	// Step 3: Validate the input
 
