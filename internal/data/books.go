@@ -96,3 +96,28 @@ func (s *BookStore) Update(book *Book) (*Book, error) {
 	}
 	return book, nil
 }
+
+func (s *BookStore) Delete(id int64) error {
+	if id < 1 {
+		return sql.ErrNoRows
+	}
+
+	query := `DELETE FROM books WHERE id = ?`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	result, err := s.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
